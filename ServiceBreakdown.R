@@ -1,0 +1,74 @@
+
+# 
+# This invokes the ODBC package to call SQL
+library(RODBC)
+
+## This script connects to the latest iLaundry db on this computer
+ch <- odbcConnect("SystemHData")
+
+#This string 
+Str1 <- 'use ilaundry
+drop table #myTempTable
+SELECT SALESDOCUMENT.SALESDOCUMENTID as SalesDocumentID, 
+                SALESDOCUMENTLINE.SERVICEITEMTYPEID as ServiceType, 
+                SERVICETYPE.DESCRIPTION AS ServiceDescription,
+		SERVICEITEMTYPE.DESCRIPTION AS ServiceItem,
+		SALESDOCUMENT.DOCUMENTNO as Invoice, 
+                CUSTOMERRETAIL.CUSTOMERNO AS CustomerNo,
+		SALESDOCUMENT.DOCUMENTDATE as CompletedDate,  
+                CUSTOMERRETAIL.CUSTOMERTITLEID as CustomerID, 
+		iif(CUSTOMERRETAIL.CUSTOMERTITLEID =8,\'\',CUSTOMERTITLE.DESCRIPTION)+\' \'+  CUSTOMERRETAIL.FIRSTNAME+\' \'+CUSTOMERRETAIL.SURNAME as Customer,  
+		CUSTOMERRETAIL.MOBILENUMBER as Mobile, 
+                SALESDOCUMENTLINE.LINETOTAL as Value
+	into #myTempTable
+FROM     CUSTOMERRETAIL INNER JOIN
+                  SALESDOCUMENT ON CUSTOMERRETAIL.CUSTOMERRETAILID = SALESDOCUMENT.CUSTOMERRETAILID INNER JOIN
+                  CUSTOMERTITLE ON CUSTOMERRETAIL.CUSTOMERTITLEID = CUSTOMERTITLE.CUSTOMERTITLEID INNER JOIN
+                  SALESDOCUMENTLINE ON SALESDOCUMENT.SALESDOCUMENTID = SALESDOCUMENTLINE.SALESDOCUMENTID INNER JOIN
+		  SERVICEITEMTYPE ON SALESDOCUMENTLINE.SERVICEITEMTYPEID = SERVICEITEMTYPE.SERVICEITEMTYPEID INNER JOIN
+		  SERVICETYPE ON SERVICEITEMTYPE.SERVICETYPEID = SERVICETYPE.SERVICETYPEID
+WHERE  (SALESDOCUMENT.DOCUMENTTYPEID = 2) AND 
+        (SALESDOCUMENT.DOCUMENTSTATUSID = 10) AND 
+        (SALESDOCUMENTLINE.SERVICEITEMTYPEID IS NOT NULL) AND 
+        (SALESDOCUMENT.DOCUMENTDATE > CONVERT(DATETIME, \'2013-08-01 00:00:00\', 102)) AND 
+        (SALESDOCUMENT.DOCUMENTDATE <= CONVERT(DATETIME, \'2015-08-08 00:00:00\', 102))
+GROUP BY SALESDOCUMENT.SALESDOCUMENTID, 
+                SALESDOCUMENTLINE.SERVICEITEMTYPEID, 
+                SALESDOCUMENT.DOCUMENTNO, 
+                SALESDOCUMENT.DOCUMENTDATE, 
+                CUSTOMERRETAIL.CUSTOMERTITLEID,
+		CUSTOMERTITLE.DESCRIPTION, 
+                CUSTOMERRETAIL.FIRSTNAME, 
+                CUSTOMERRETAIL.SURNAME, 
+                CUSTOMERRETAIL.MOBILENUMBER,
+		SALESDOCUMENTLINE.LINETOTAL, 
+                SERVICETYPE.DESCRIPTION, 
+                CUSTOMERRETAIL.CUSTOMERNO, 
+                SERVICEITEMTYPE.DESCRIPTION'
+
+sqlQ1 <- sqlQuery(ch, paste(Str1))
+
+
+## /* select * from #myTempTable */
+
+Str2 <- 'SELECT *, SUM(Value) OVER(partition by ServiceDescription order by  CompletedDate)[Cumulative Sum]
+FROM #myTempTable'
+
+sqlQ2<- sqlQuery(ch, paste(Str2))
+
+Str3 <- 'SELECT *, SUM(Value) OVER(partition by ServiceItem order by cast(dbo.F_ISO_WEEK_OF_YEAR(CompletedDate) as float)/52 + year(CompletedDate)*100)[Cumulative Sum]
+FROM   #myTempTable
+'
+
+
+sqlQ3 <- sqlQuery(ch, paste(Str3))
+
+Str4 <- 'SELECT *, SUM(Value) OVER(partition by ServiceItem order by  CompletedDate)[Cumulative Sum]
+FROM #myTempTable'
+
+sqlQ4 <- sqlQuery(ch, paste(Str4))
+
+
+write.csv(file="c:/doc/Levingers/myRServiceAnalysisExtended.csv", x=sqlQ2)
+
+odbcClose(ch)

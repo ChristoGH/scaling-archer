@@ -1,0 +1,30 @@
+s<-sqlQ3$ServiceItem
+#gsub("e", "", group)
+schar<-as.character(s)
+schar <- gsub("Prs", "Press", schar)
+schar <- gsub("Lthr", "Leather", schar)
+schar <- gsub("L&S", "Leather Suede", schar)
+schar <- gsub("Dry", "Drycleaning", schar)
+schar <- gsub("Pce", "Piece", schar)
+schar <- gsub("Med", "Medium", schar)
+schar <- gsub("Lrg", "Large", schar)
+schar <- gsub("Sml", "Small", schar)
+schar <- gsub("Shrtn", "Shorten", schar)
+schar <- gsub("-", "", schar)
+schar <- gsub("Hsk", "Housekeeping", schar)
+schar <- gsub("Alt", "Alterations", schar)
+schar <- gsub("Cob", "Cobbling", schar)
+schar <- gsub("Dlx", "Deluxe", schar)
+schar <- gsub("Misc", "", schar)
+schar <- gsub("Ordinary", "", schar)
+schar <- gsub("Lngth", "Length", schar)
+schar <- gsub("Orgnl", "Original", schar)
+schar <- gsub("Smpl", "Simple", schar)
+schar <- gsub("Grmnt", "Garment", schar)
+schar <- gsub("Pckt", "Pocket", schar)
+write.table(schar, file = "c:/rprogramming/shopstats/WordCloud.csv", append = FALSE, quote = TRUE, sep = ",",
+            eol = "\n", na = "NA", dec = ".", row.names = TRUE,
+            col.names = TRUE, qmethod = c("escape", "double"),
+            fileEncoding = "")
+
+myRoles <- read.table("C:/Users/Admin/Creative Cloud Files/CVRInfoGraphic/myRoles.csv", header = TRUE, sep = ",", quote = "\"",dec=".", row.names=NULL)
