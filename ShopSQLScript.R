@@ -89,12 +89,32 @@ SqlProductString <- 'SELECT SALESDOCUMENT.SALESDOCUMENTID as SalesDocumentID,
         productFrame$SalesDate<-format(productFrame$SalesDate,"%Y-%m-%d %H:%M")
         salesFrame$SalesDate<-format(salesFrame$SalesDate,"%Y-%m-%d %H:%M")
 
+#         salesFrame$yMon <- as.yearmon(as.Date(salesFrame$SalesDate), "%YM%m")
+#         productFrame$yMon <- as.yearmon(as.Date(productFrame$SalesDate), "%YM%m")
+
+        
+        productFrame$Type <- "Counter"
+        productFrame$Category <- "Product"
+        salesFrame$Category <- "Service"
+        consolidatedFrame <- data.frame(c(as.character(salesFrame$ServiceDescription),productFrame$Type),
+                                        c(salesFrame$SatesDate,productFrame$SatesDate),
+                                        c(salesFrame$Value,productFrame$Value),c(salesFrame$Category,productFrame$Category))
+        # head(consolidatedFrame)
+        consolidatedFrame <- setNames(consolidatedFrame, c("Item", "Date", "Value", "Category"))
+        
+
         sqlDrop(chShop, "productFrame") 
         sqlSave(chShop, productFrame, append = FALSE,
                 colnames = FALSE,rownames = FALSE)
+
         sqlDrop(chShop, "salesFrame") 
         sqlSave(chShop, salesFrame, append = FALSE,
                 colnames = FALSE,rownames = FALSE)
+
+        sqlDrop(chShop, "consolidatedFrame") 
+        sqlSave(chShop, consolidatedFrame, append = FALSE,
+                colnames = FALSE,rownames = FALSE)
+
 
 odbcClose(ch)         
 odbcClose(chShop)    
