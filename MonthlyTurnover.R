@@ -86,12 +86,12 @@ uniqueSI <- unique(salesFrame$ServiceItem)
         dev.off()
 
 #-Plot consolidated Stats-----------------------------------------------------------------------------------------------------        
-        datestr <- as.POSIXct(max(productFrame$SalesDate), tz = "", "%d/%m/%Y %H:%M")
-        ProductMonthString <- format(datestr, "%B %Y")
-        png(file=paste("Monthly Turnover by Product","_",ProductMonthString,".png",sep=""))                
+        datestr <- as.POSIXct(max(consolData$yMon), tz = "", "%d/%m/%Y %H:%M")
+        totalMonthString <- format(datestr, "%B %Y")
+        png(file=paste("Total Monthly Turnover","_",totalMonthString,".png",sep=""))                
         
-        compplot <- ggplot(data = productData, 
-                           mapping = aes(x = factor(yMon), y = AggregateValue, fill = ProductDescription)) +
+        compplot <- ggplot(data = consolData, 
+                           mapping = aes(x = factor(yMon), y = AggregateValue, fill = Description)) +
                 geom_bar(width=.7, stat="identity", alpha=0.7) +
                 labs(title = paste("Monthly Turnover by PRODUCT"), 
                      x=paste("Month",""), 
