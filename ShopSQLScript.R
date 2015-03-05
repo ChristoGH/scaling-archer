@@ -86,8 +86,8 @@ SqlProductString <- 'SELECT SALESDOCUMENT.SALESDOCUMENTID as SalesDocumentID,
 
 
         productFrame <- sqlQuery(ch, paste(SqlProductString))  
-        productFrame$SalesDate<-format(productFrame$SalesDate,"%Y-%m-%d %H:%M")
-        salesFrame$SalesDate<-format(salesFrame$SalesDate,"%Y-%m-%d %H:%M")
+        productFrame$SalesDate<-format(as.Date(productFrame$SalesDate),"%Y-%m-%d %H:%M")
+        salesFrame$SalesDate<-format(as.Date(salesFrame$SalesDate),"%Y-%m-%d %H:%M")
 
 #         salesFrame$yMon <- as.yearmon(as.Date(salesFrame$SalesDate), "%YM%m")
 #         productFrame$yMon <- as.yearmon(as.Date(productFrame$SalesDate), "%YM%m")
@@ -96,12 +96,13 @@ SqlProductString <- 'SELECT SALESDOCUMENT.SALESDOCUMENTID as SalesDocumentID,
         productFrame$Type <- "Counter"
         productFrame$Category <- "Product"
         salesFrame$Category <- "Service"
-        consolidatedFrame <- data.frame(c(as.character(salesFrame$ServiceDescription),productFrame$Type),
-                                        c(salesFrame$SatesDate,productFrame$SatesDate),
-                                        c(salesFrame$Value,productFrame$Value),c(salesFrame$Category,productFrame$Category))
-        # head(consolidatedFrame)
-        consolidatedFrame <- setNames(consolidatedFrame, c("Item", "Date", "Value", "Category"))
         
+                shortsalesFrame <- salesFrame[,c("ServiceDescription","SalesDate","Category", "Value")]
+                shortproductFrame <- productFrame[,c("Type","SalesDate","Category", "Value")]
+                shortproductFrame<-rename(shortproductFrame, c("Type"="Description"))
+                shortsalesFrame<-rename(shortsalesFrame, c("ServiceDescription"="Description"))
+
+        consolidatedFrame <- rbind(shortproductFrame, shortsalesFrame)
 
         sqlDrop(chShop, "productFrame") 
         sqlSave(chShop, productFrame, append = FALSE,

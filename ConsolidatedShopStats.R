@@ -15,18 +15,7 @@ chShop <- odbcConnect("shopData")
                 productFrame$Value<-as.numeric(data.matrix(productFrame$Value))
         #The following adds a column to the data which is a string identifying the month and year of each entry.
         #This is for uniquely identifying items BY MONTH
-                salesFrame$yMon <- as.yearmon(as.Date(salesFrame$SalesDate), "%YM%m")
-                productFrame$yMon <- as.yearmon(as.Date(productFrame$SalesDate), "%YM%m")
 odbcClose(chShop)
-
-productFrame$Type <- "Counter"
-productFrame$Category <- "Product"
-salesFrame$Category <- "Service"
-consolidatedFrame <- data.frame(c(as.character(salesFrame$ServiceDescription),productFrame$Type),
-                                     c(salesFrame$yMon,productFrame$yMon),
-                                c(salesFrame$Value,productFrame$Value),c(salesFrame$Category,productFrame$Category))
-# head(consolidatedFrame)
-consolidatedFrame <- setNames(consolidatedFrame, c("Item", "Month", "Value", "Category"))
 
 # Lets set the sales dates to something we UNDERSTAND:
         salesFrame$SalesDate<-as.POSIXct(as.Date(salesFrame$SalesDate), tz = "", "%d/%m/%Y %H:%M")

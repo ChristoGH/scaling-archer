@@ -1,6 +1,7 @@
 # Run this script FIRST.  It invokes some libraries and define some functions
 # Place newer function FIRST and more generic older TESTED functions
 # further down below.
+
 library(scales)
 library(dplyr)
 library(timeDate)

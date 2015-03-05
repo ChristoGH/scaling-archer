@@ -9,9 +9,12 @@
 chShop <- odbcConnect("shopData")
         salesFrame <- sqlFetch(chShop, "salesFrame")
         productFrame <- sqlFetch(chShop, "productFrame")
+        consolidatedFrame <- sqlFetch(chShop, "consolidatedFrame")
+        
         salesFrame$SalesDate<-as.POSIXct(as.Date(salesFrame$SalesDate), tz = "", "%d/%m/%Y %H:%M")
         productFrame$SalesDate<-as.POSIXct(as.Date(productFrame$SalesDate), tz = "", "%d/%m/%Y %H:%M")
-        
+        consolidatedFrame$SalesDate<-as.POSIXct(as.Date(consolidatedFrame$SalesDate), tz = "", "%d/%m/%Y %H:%M")
+        #        consolidatedFrame
 odbcClose(chShop) 
 
         
@@ -24,12 +27,16 @@ uniqueSI <- unique(salesFrame$ServiceItem)
  
         salesFrame$yMon <- as.yearmon(as.Date(salesFrame$SalesDate), "%YM%m")
         productFrame$yMon <- as.yearmon(as.Date(productFrame$SalesDate), "%YM%m")
+        merge(salesFrame,productFrame, by.x="yMon", by.y="yMon")
+        consolidatedFrame$yMon <- as.yearmon(as.Date(consolidatedFrame$SalesDate), "%YM%m")
         
         salesData <- aggregate(as.numeric(data.matrix(Value)) ~ (ServiceDescription+yMon), FUN = "sum", data = salesFrame)        
         productData <- aggregate(as.numeric(data.matrix(Value)) ~ (ProductType+yMon), FUN = "sum", data = productFrame)        
+        consolData <- aggregate(as.numeric(data.matrix(Value)) ~ (Description+yMon), FUN = "sum", data = consolidatedFrame)        
         #Let's set the header names:
         salesData <- setNames(salesData, c("ServiceDescription", "yMon", "AggregateValue"))
         productData <- setNames(productData, c("ProductDescription", "yMon", "AggregateValue"))
+        consolData <- setNames(consolData, c("Description", "yMon", "AggregateValue"))
         
 # Let us try and plot this lot:
 # Set the file name
@@ -100,6 +107,21 @@ uniqueSI <- unique(salesFrame$ServiceItem)
         print(compplot)
         makeHeadnote(paste("Levingers Victory Park:", Sys.time()), color = "black")
         dev.off()
+
+        ggplot(data = consolData, 
+               mapping = aes(x = factor(yMon), y = AggregateValue, fill = Description)) +
+                geom_bar(width=.7, stat="identity", alpha=0.7) +
+                labs(title = paste("Monthly Turnover by Item"), 
+                     x=paste("Month",""), 
+                     y=paste("Value in Rand"))+ 
+                theme(
+                        axis.title.y = element_text(size = rel(1.25), colour = "Black"),
+                        axis.title.x = element_text(size = rel(1.25), colour = "Black"),
+                        plot.title = element_text(size = rel(1.5), colour = "Black", vjust=0.35),
+                        axis.text = element_text(size = rel(1), colour = "Black"),
+                        plot.background = element_rect(fill = "transparent",colour = NA),
+                        axis.text.x = element_text(angle = -90, vjust = 0.25, hjust=1)
+                )  + scale_y_continuous(labels = comma)        
         
 setwd(wd)
         
