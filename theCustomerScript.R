@@ -1,5 +1,8 @@
 # Remember to RUN the StartUp.R script FIRST.
+# So far:
+# Salesframe is the generic all-in summary of the iLaundry databse for SERVICES rendered.
 # Set the working directory like so:
+
         wd <- getwd()
         setwd("C:/rProgramming/ShopStats/Graphs")
 
@@ -73,5 +76,49 @@ return(X)}
 #         cb <- cbind(rep(1:ceiling(length(uniqueDays)/7),each=7),uniqueDays, dmat)
         analysisArraydf <- ldply(analysisArray, data.frame)
         
-        aggCobblingSTTableTF <- aggregate(as.numeric(data.matrix(Value)) ~ (ServiceType+SalesDateC), FUN = "sum", data=salesFrame)        
+        aggCobblingSTTableTF <- aggregate(Value ~ (ServiceDescription+SalesDateC), FUN = "sum", data=salesFrame)        
+        
+        
+#----------------------------------------------------------------------------------------------------
+# The following code represents a month and allows numbers to be plotted on each day of the month:
+        
+        
+        start <- as.Date("2015-02-01")
+        numdays <- 60
+        
+        weeknum <- function(date){
+                z <- as.Date(date, format="%Y-%m-%d")
+                as.numeric( format(z-1, "%U"))
+        }
+        
+        
+        dates <- data.frame(date=seq(start, length.out=numdays, by="1 day"))
+        dates <- within(dates, {
+                weeknum <- weeknum(date)
+                month   <- format(date, "%m")
+                weekday <- format(date, "%a")
+                day     <- format(date, "%d")
+        })
+        
+        dates$weekday <- factor(dates$weekday, levels=c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+        
+        library(ggplot2)
+        ggplot(dates, aes(x=weekday, y=weeknum, fill = day)) + 
+                geom_tile(fill="blue", col="white") +
+                geom_text(aes(label=day)) + scale_colour_gradient(limits=c(1, 40))   
+
+        ggplot(dates, aes(x=weekday, y=weeknum, fill = day)) + 
+                geom_tile() +
+                geom_text(aes(label=day)) + scale_colour_gradient(limits=c(1, 10))   
+
+        
+#-----------------------------------------------------------------------------------------------------
+        mergeFrame <- merge(dates, analysisArraydf, by.x="date",by.y="Date")
+        ggplot(mergeFrame, aes(x=weekday, y=weeknum, fill = NumberofCustomers)) + 
+                geom_tile() +
+                geom_text(aes(label=day)) + scale_fill_gradient(low="green", high="red") # scale_colour_gradient(limits=c(1, 10))           
+
+        ggplot(mergeFrame, aes(x=weekday, y=weeknum, fill = NumberNewCustomers)) + 
+                geom_tile() +
+                geom_text(aes(label=day)) + scale_fill_gradient(low="yellow", high="red") # scale_colour_gradient(limits=c(1, 10))           
         
