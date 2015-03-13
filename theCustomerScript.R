@@ -1,6 +1,10 @@
 # Remember to RUN the StartUp.R script FIRST.
 # So far:
 # Salesframe is the generic all-in summary of the iLaundry databse for SERVICES rendered.
+# The purpose of this R Script is to produce some graphs of the iLaundry database.
+# The focus is the most recent month.  This month is compared to the previous month but 
+# also the previous year's calendar month
+# The first graph is to explore the growth of the database: 
 # Set the working directory like so:
 
         wd <- getwd()
@@ -76,15 +80,39 @@ return(X)}
 #         cb <- cbind(rep(1:ceiling(length(uniqueDays)/7),each=7),uniqueDays, dmat)
         analysisArraydf <- ldply(analysisArray, data.frame)
         
+#The data frame needs to be sorted by Date to remove glitches and to get it ready for PLOTTING:        
+        analysisArraydf <- arrange(analysisArraydf, Date)        
+        analysisArraydf$dbGrowth <- cumsum(analysisArraydf$NumberNewCustomers)
         aggCobblingSTTableTF <- aggregate(Value ~ (ServiceDescription+SalesDateC), FUN = "sum", data=salesFrame)        
+        
+#-Growth of the database-------------------------------------------------------------------------------
+        
+        png(file=paste("growthOfTheLevVPdatabase_", MonthString,".png",sep=""))                
+        compplot <- ggplot(data = analysisArraydf, 
+                           mapping = aes(x = Date, y = dbGrowth)) +
+                geom_bar(fill = "blue", width=.7, stat="identity", alpha=0.7) +
+                labs(title = "Growth of the Victory Park dB", 
+                     x="Date", 
+                     y="All in Customers")+ 
+                theme(
+                        axis.title.y = element_text(size = rel(1.25), colour = "Black"),
+                        axis.title.x = element_text(size = rel(1.25), colour = "Black"),
+                        plot.title = element_text(size = rel(1.5), colour = "Black", vjust=0.35),
+                        axis.text = element_text(size = rel(1), colour = "Black"),
+                        plot.background = element_rect(fill = "transparent",colour = NA)
+                ) 
+        print(compplot)
+        makeHeadnote(paste("Shop statistics for",MonthString), color = "black")
+        dev.off()
+        
         
         
 #----------------------------------------------------------------------------------------------------
 # The following code represents a month and allows numbers to be plotted on each day of the month:
         
         
-        start <- as.Date("2015-02-01")
-        numdays <- 60
+        start <- as.Date("2014-02-01")
+        numdays <- 250
         
         weeknum <- function(date){
                 z <- as.Date(date, format="%Y-%m-%d")
@@ -113,12 +141,40 @@ return(X)}
 
         
 #-----------------------------------------------------------------------------------------------------
+# Now merge the dataframes "dates" and "analysisArraydf" into one called "mergeFrame":
         mergeFrame <- merge(dates, analysisArraydf, by.x="date",by.y="Date")
+        
         ggplot(mergeFrame, aes(x=weekday, y=weeknum, fill = NumberofCustomers)) + 
                 geom_tile() +
-                geom_text(aes(label=day)) + scale_fill_gradient(low="green", high="red") # scale_colour_gradient(limits=c(1, 10))           
+                geom_text(aes(label=day)) + scale_fill_gradient(low="green", high="red") +
+                labs(title = "Total Number of Customers", x="Week Day", y="Week Number")
+        # scale_colour_gradient(limits=c(1, 10))           
 
         ggplot(mergeFrame, aes(x=weekday, y=weeknum, fill = NumberNewCustomers)) + 
                 geom_tile() +
                 geom_text(aes(label=day)) + scale_fill_gradient(low="yellow", high="red") # scale_colour_gradient(limits=c(1, 10))           
         
+        
+        BubblePlot <- ggplot(splitFrame, aes(x=tImprov, y=finalsSeconds,size=AgeGroup,label=Name))+
+                geom_point(aes(colour=Province,title = "Province"), alpha=0.5) +  labs(title = paste(LongEventString, FinalsStr), x="Time improvement in Seconds", y="Time in Seconds") +#scale_size_area(min_size = 1,max_size = 10)+
+                geom_text(size=2, aes(label=Name),hjust=-0.15, vjust=0) +
+                scale_size(range = c(1, 15), name = "Relative Age")+  
+                guides(col = guide_legend(override.aes = list(shape = 15, size = 10))) +
+                theme(
+                        axis.title.y = element_text(size = rel(1.25), colour = "Black"),
+                        axis.title.x = element_text(size = rel(1.25), colour = "Black"),
+                        plot.title = element_text(size = rel(1.5), colour = "Black", vjust=0.35),
+                        axis.text = element_text(size = rel(1), colour = "Black"),
+                        #panel.background = element_rect(fill = "white",colour = NA), # or theme_blank()
+                        #panel.grid.minor = element_blank(), 
+                        #panel.grid.major = element_blank(),
+                        #legend.title = element_text("This is it!"),
+                        #                plot.background = element_rect(fill = "white",colour = NA)
+                        plot.background = element_rect(fill = "transparent",colour = NA)
+                        #axis.text = element_text(colour="yellow")
+                ) +
+                guides(size=guide_legend(override.aes = list(fill="black", alpha=1)))#+
+        print(BubblePlot)
+        makeHeadnote(HeadNoteALL, color = "black")
+        }
+        }         
