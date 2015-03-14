@@ -3,8 +3,10 @@
 # Salesframe is the generic all-in summary of the iLaundry databse for SERVICES rendered.
 # The purpose of this R Script is to produce some graphs of the iLaundry database.
 # The focus is the most recent month.  This month is compared to the previous month but 
-# also the previous year's calendar month
-# The first graph is to explore the growth of the database: 
+# also the previous year's calendar month.
+# *** The first graph is to explore the growth of the database ***
+# *** The second graph explores customer appearances for the most recent calendar month ***
+# Break the database up in the three core components that of Cobbling, Alterations and Dry Cleaning
 # Set the working directory like so:
 
         wd <- getwd()
@@ -105,7 +107,11 @@ return(X)}
         makeHeadnote(paste("Shop statistics for",MonthString), color = "black")
         dev.off()
         
+# -- This tests for a line plot as opposed to a histogram plot
         
+        ggplot(data = analysisArraydf, 
+               mapping = aes(x = Date, y = dbGrowth)) +
+                geom_line(color = "blue", size=2, stat="identity", alpha=0.7)
         
 #----------------------------------------------------------------------------------------------------
 # The following code represents a month and allows numbers to be plotted on each day of the month:
