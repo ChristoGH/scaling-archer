@@ -2,18 +2,18 @@
 # Place newer function FIRST and more generic older TESTED functions
 # further down below.
 
-library(scales)
-library(dplyr)
-library(timeDate)
-library(zoo)
-library(date)
-library(chron)
-library(reshape2)
+                library(scales)
+                library(dplyr)
+                library(timeDate)
+                library(zoo)
+                library(date)
+                library(chron)
+                library(reshape2)
         # This is for functions such as melt, dcast and reshape.
-library(ggplot2)           
-library(gridExtra)
-library(RODBC)
-library(plyr)
+                library(ggplot2)           
+                library(gridExtra)
+                library(RODBC)
+                library(plyr)
 
 
 ServicePLOTfunction <- function(TableTF, 

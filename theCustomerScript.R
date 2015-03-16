@@ -23,6 +23,8 @@ chShop <- odbcConnect("shopData")
         salesFrame$ServiceItem <- gsub("Misc - ", "", salesFrame$ServiceItem)
         salesFrame$ServiceItem <- gsub(" - Each", "", salesFrame$ServiceItem)
         salesFrame$ServiceItem <- gsub(" 1/2", "", salesFrame$ServiceItem)
+        salesFrame$yMon <- as.yearmon(as.Date(salesFrame$SalesDate), "%YM%m")
+        
 odbcClose(chShop)
 
 #  The start and end dates for SEPTEMBER 2014:
@@ -42,8 +44,27 @@ odbcClose(chShop)
 
 #This is the index for values between the Zero and To dates, the Total period:        
         IndexZeroTo <- (as.Date(salesFrame$SalesDate)<as.Date(DateTo))&(as.Date(salesFrame$SalesDate)>=as.Date(DateZero))
-
-
+        
+        # Here is where we have to calculate 
+        # 1.    the number of days since the last visit
+        # 2.    the number of times previously visit
+        # 3.    the average days between visits
+        
+                #       Let say Day = 26 January 2015 or
+                                Day <- as.Date("2015-01-01")
+                                DateZero <- as.numeric(as.POSIXct("01/01/2013 00:00", tz = "", "%d/%m/%Y %H:%M")) 
+                #       Then 
+                                DateFrom <- as.numeric(as.POSIXct(Day, tz = "", "%d/%m/%Y"))       
+                #       And
+                                DateTo <- as.numeric(as.POSIXct(Day+1, tz = "", "%d/%m/%Y"))
+                              IndexToFrom <- (salesFrame$SalesDate<DateTo)&(salesFrame$SalesDate>=DateFrom)
+                              IndexZeroFrom <- (salesFrame$SalesDate<DateFrom)&(salesFrame$SalesDate>=DateZero)
+                              UniqueSalesOrders <- unique(salesFrame[IndexToFrom,]$Invoice)
+        
+#                         NumberReturningCustomers <- length(intersect(unique(salesFrame[IndexToFrom,]$CustomerNo),unique(salesFrame[IndexZeroFrom,]$CustomerNo)))
+#                         NumberofCustomers <- length(unique(Frame[IndexToFrom,]$CustomerNo))
+#                         NumberNewCustomers <- NumberofCustomers - NumberReturningCustomers
+        
 
 DailyCustomerAnalysis <- function(Day1, Frame){
         #       unique(as.Date(sqlQ3$SalesDate))        
@@ -55,6 +76,7 @@ DailyCustomerAnalysis <- function(Day1, Frame){
         IndexZeroFrom <- (Frame$SalesDate<DateFrom)&(Frame$SalesDate>=DateZero)
         UniqueSalesOrders <- unique(Frame[IndexToFrom,]$Invoice)
         
+
         NumberReturningCustomers <- length(intersect(unique(Frame[IndexToFrom,]$CustomerNo),unique(Frame[IndexZeroFrom,]$CustomerNo)))
         NumberofCustomers <- length(unique(Frame[IndexToFrom,]$CustomerNo))
         NumberNewCustomers <- NumberofCustomers - NumberReturningCustomers
@@ -81,11 +103,13 @@ return(X)}
 #         dmat <- matrix(data=unlist(analysisArray),ncol=3, byrow=TRUE)
 #         cb <- cbind(rep(1:ceiling(length(uniqueDays)/7),each=7),uniqueDays, dmat)
         analysisArraydf <- ldply(analysisArray, data.frame)
+        analysisArraydf$yMon <- as.yearmon(as.Date(analysisArraydf$Date), "%YM%m")
         
 #The data frame needs to be sorted by Date to remove glitches and to get it ready for PLOTTING:        
         analysisArraydf <- arrange(analysisArraydf, Date)        
         analysisArraydf$dbGrowth <- cumsum(analysisArraydf$NumberNewCustomers)
-        aggCobblingSTTableTF <- aggregate(Value ~ (ServiceDescription+SalesDateC), FUN = "sum", data=salesFrame)        
+        analysisMonthdf <- aggregate(cbind(NumberReturningCustomers,NumberNewCustomers,NumberofCustomers)~yMon, FUN = "sum", data=analysisArraydf)        
+        analysisMonthdf <- aggregate(x = analysisArraydf, by = list(), FUN = "sum")        
         
 #-Growth of the database-------------------------------------------------------------------------------
         
@@ -117,7 +141,7 @@ return(X)}
 # The following code represents a month and allows numbers to be plotted on each day of the month:
         
         
-        start <- as.Date("2014-02-01")
+        start <- as.Date("2015-02-01")
         numdays <- 250
         
         weeknum <- function(date){
