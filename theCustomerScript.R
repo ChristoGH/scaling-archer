@@ -5,6 +5,9 @@
 # The focus is the most recent month.  This month is compared to the previous month but 
 # also the previous year's calendar month.
 # *** The first graph is to explore the growth of the database ***
+        # Growth in the database is illustrated by graphing the number of new customers and returning customers
+        # by month.  The varibale analysisMonthdf is the data frame that achieves or presents the data.
+
 # *** The second graph explores customer appearances for the most recent calendar month ***
 # Break the database up in the three core components that of Cobbling, Alterations and Dry Cleaning
 # Set the working directory like so:
@@ -109,7 +112,8 @@ return(X)}
         analysisArraydf <- arrange(analysisArraydf, Date)        
         analysisArraydf$dbGrowth <- cumsum(analysisArraydf$NumberNewCustomers)
         analysisMonthdf <- aggregate(cbind(NumberReturningCustomers,NumberNewCustomers,NumberofCustomers)~yMon, FUN = "sum", data=analysisArraydf)        
-        analysisMonthdf <- aggregate(x = analysisArraydf, by = list(), FUN = "sum")        
+        analysisMonthdf$Date <- as.Date(analysisMonthdf$yMon)
+        # analysisMonthdf <- aggregate(x = analysisArraydf, by = list(), FUN = "sum")        
         
 #-Growth of the database-------------------------------------------------------------------------------
         
@@ -136,6 +140,37 @@ return(X)}
         ggplot(data = analysisArraydf, 
                mapping = aes(x = Date, y = dbGrowth)) +
                 geom_line(color = "blue", size=2, stat="identity", alpha=0.7)
+
+        
+# -This function then plots customer visits:    Blue - all cutomers per month        
+#                                                 Red - new
+#                                                 Green - returning
+        ggplot(data = analysisMonthdf, 
+               mapping = aes(x = Date)) +
+                geom_line(aes(y = NumberofCustomers, color = "Total"),  size = 2)+
+                geom_line(aes(y = NumberNewCustomers, color = "New"), size = 1)+
+                geom_line(aes(y = NumberReturningCustomers, color = "Returning"),  size = 1)+
+                labs(title = "Customer Visits", x="Month", y="Monthly Customer Count")+
+                scale_colour_manual("", 
+                                    breaks = c("Total", "New", "Returning"),
+                                    values = c("red", "green", "blue")) +
+                guides(col = guide_legend(override.aes = list(shape = 15, size = 10))) +
+                theme(
+                        axis.title.y = element_text(size = rel(1.25), colour = "Black"),
+                        axis.title.x = element_text(size = rel(1.25), colour = "Black"),
+                        plot.title = element_text(size = rel(1.5), colour = "Black", vjust=0.35),
+                        axis.text = element_text(size = rel(1), colour = "Black"),
+                        #panel.background = element_rect(fill = "white",colour = NA), # or theme_blank()
+                        #panel.grid.minor = element_blank(), 
+                        #panel.grid.major = element_blank(),
+                        #legend.title = element_text("This is it!"),
+                        #                plot.background = element_rect(fill = "white",colour = NA)
+                        plot.background = element_rect(fill = "transparent",colour = NA)
+                        #axis.text = element_text(colour="yellow")
+                ) +
+                guides(size=guide_legend(override.aes = list(fill="black", alpha=1)))
+        
+        
         
 #----------------------------------------------------------------------------------------------------
 # The following code represents a month and allows numbers to be plotted on each day of the month:
