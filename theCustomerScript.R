@@ -150,8 +150,8 @@ return(X)}
                 geom_line(aes(y = NumberofCustomers, color = "Total"),  size = 2)+
                 geom_line(aes(y = NumberNewCustomers, color = "New"), size = 1)+
                 geom_line(aes(y = NumberReturningCustomers, color = "Returning"),  size = 1)+
-                labs(title = "Customer Visits", x="Month", y="Monthly Customer Count")+
-                scale_colour_manual("", 
+                labs(title = paste("Customer Visits per Month","\n All Services"), x="Month", y="Monthly Customer Count")+
+                scale_colour_manual("Break down", 
                                     breaks = c("Total", "New", "Returning"),
                                     values = c("red", "green", "blue")) +
                 guides(col = guide_legend(override.aes = list(shape = 15, size = 10))) +
