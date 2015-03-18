@@ -31,16 +31,16 @@ chShop <- odbcConnect("shopData")
 odbcClose(chShop)
 
 #  The start and end dates for SEPTEMBER 2014:
-        DateZero <- (as.POSIXct("01/01/2013 00:00", tz = "", "%d/%m/%Y %H:%M")) 
-        DateFrom <- (as.POSIXct("01/02/2015 00:00", tz = "", "%d/%m/%Y %H:%M"))        #The unique ServiceItem values are found so:
-        DateTo <- (as.POSIXct("01/03/2015 00:00", tz = "", "%d/%m/%Y %H:%M"))  
+        DateZero <- as.numeric(as.POSIXct("01/01/2013 00:00", tz = "", "%d/%m/%Y %H:%M")) 
+        DateFrom <- as.numeric(as.POSIXct("01/02/2015 00:00", tz = "", "%d/%m/%Y %H:%M"))        #The unique ServiceItem values are found so:
+        DateTo <- as.numeric(as.POSIXct("01/03/2015 00:00", tz = "", "%d/%m/%Y %H:%M"))  
         datestr<-as.POSIXct("01/02/2015 00:00", tz = "", "%d/%m/%Y %H:%M")
         MonthString <- format(datestr, "%B %Y")
 
 
 #This is the index for values between the From and To dates, the Current period:
 #IndexToFrom <- (salesFrame$SalesDate<DateTo)&(salesFrame$SalesDate>=DateFrom)
-        IndexToFrom <- (as.Date(salesFrame$SalesDate)<as.Date(DateTo))&(as.Date(salesFrame$SalesDate)>=as.Date(DateFrom))
+        IndexToFrom <- ((salesFrame$SalesDate)<(DateTo))&((salesFrame$SalesDate)>=(DateFrom))
 
 #This is the index for values between the Zero and From dates, the prior period:        
         IndexZeroFrom <- (as.Date(salesFrame$SalesDate)<as.Date(DateFrom))&(as.Date(salesFrame$SalesDate)>=as.Date(DateZero))
@@ -68,32 +68,38 @@ odbcClose(chShop)
 #                         NumberofCustomers <- length(unique(Frame[IndexToFrom,]$CustomerNo))
 #                         NumberNewCustomers <- NumberofCustomers - NumberReturningCustomers
         
-
-DailyCustomerAnalysis <- function(Day1, Frame){
-        #       unique(as.Date(sqlQ3$SalesDate))        
-        DateZero <- as.numeric(as.POSIXct("01/01/2013 00:00", tz = "", "%d/%m/%Y %H:%M")) 
-        DateFrom <- as.numeric(as.POSIXct(as.Date(Day1), tz = "", "%d/%m/%Y"))        #The unique ServiceItem values are found so:
-        DateTo <- as.numeric(as.POSIXct(as.Date(Day1)+1, tz = "", "%d/%m/%Y"))
+# The following function calculates the number of customers, 
+# the number of returning customers and the number of new customers on any given "day1" date
+#----------------------------------------------------------------------------------------------------        
+        DailyCustomerAnalysis <- function(Day1, Frame){
+                #       unique(as.Date(sqlQ3$SalesDate))        
+                DateZero <- as.numeric(as.POSIXct("01/01/2013 00:00", tz = "", "%d/%m/%Y %H:%M")) 
+                DateFrom <- as.numeric(as.POSIXct(as.Date(Day1), tz = "", "%d/%m/%Y"))        #The unique ServiceItem values are found so:
+                DateTo <- as.numeric(as.POSIXct(as.Date(Day1)+1, tz = "", "%d/%m/%Y"))
+                
+                IndexToFrom <- (Frame$SalesDate<DateTo)&(Frame$SalesDate>=DateFrom)
+                IndexZeroFrom <- (Frame$SalesDate<DateFrom)&(Frame$SalesDate>=DateZero)
+                UniqueSalesOrders <- unique(Frame[IndexToFrom,]$Invoice)
+                
         
-        IndexToFrom <- (Frame$SalesDate<DateTo)&(Frame$SalesDate>=DateFrom)
-        IndexZeroFrom <- (Frame$SalesDate<DateFrom)&(Frame$SalesDate>=DateZero)
-        UniqueSalesOrders <- unique(Frame[IndexToFrom,]$Invoice)
-        
+                NumberReturningCustomers <- length(intersect(unique(Frame[IndexToFrom,]$CustomerNo),unique(Frame[IndexZeroFrom,]$CustomerNo)))
+                NumberofCustomers <- length(unique(Frame[IndexToFrom,]$CustomerNo))
+                NumberNewCustomers <- NumberofCustomers - NumberReturningCustomers
+                Date <- as.Date(Day1)
+                X <-data.frame(Date,NumberReturningCustomers,NumberNewCustomers,NumberofCustomers)
+                
+                #        DateFrom <- as.numeric(as.Date(Day1), tz = "", "%d/%m/%Y")        #The unique ServiceItem values are found so:
+                #        DateTo <- as.numeric(as.Date(Day1)+1, tz = "", "%d/%m/%Y") 
+        return(X)}
 
-        NumberReturningCustomers <- length(intersect(unique(Frame[IndexToFrom,]$CustomerNo),unique(Frame[IndexZeroFrom,]$CustomerNo)))
-        NumberofCustomers <- length(unique(Frame[IndexToFrom,]$CustomerNo))
-        NumberNewCustomers <- NumberofCustomers - NumberReturningCustomers
-        Date <- as.Date(Day1)
-        X <-data.frame(Date,NumberReturningCustomers,NumberNewCustomers,NumberofCustomers)
         
-        #        DateFrom <- as.numeric(as.Date(Day1), tz = "", "%d/%m/%Y")        #The unique ServiceItem values are found so:
-        #        DateTo <- as.numeric(as.Date(Day1)+1, tz = "", "%d/%m/%Y") 
-return(X)}
-
+        
+        
         UniqueSalesOrders <- unique(salesFrame$Invoice)
         NumberReturningCustomers <- length(intersect(unique(salesFrame[IndexToFrom,]$CustomerNo),unique(salesFrame[IndexZeroFrom,]$CustomerNo)))
         NumberofCustomers <- length(unique(salesFrame$CustomerNo[IndexToFrom]))
         NumberNewCustomers <- NumberofCustomers - NumberReturningCustomers
+        
 ## ceiling(length(uniqueDays)/7)
         dm <- matrix(data = rep(1:ceiling(length(uniqueDays)/7),7), nrow = ceiling(length(uniqueDays)/7), ncol = 7, byrow = FALSE, dimnames = NULL)
         dm <- matrix(data = rep(1:7,ceiling(length(uniqueDays)/7)), nrow = ceiling(length(uniqueDays)/7), ncol = 7, byrow = TRUE, dimnames = NULL)
@@ -114,6 +120,9 @@ return(X)}
         analysisMonthdf <- aggregate(cbind(NumberReturningCustomers,NumberNewCustomers,NumberofCustomers)~yMon, FUN = "sum", data=analysisArraydf)        
         analysisMonthdf$Date <- as.Date(analysisMonthdf$yMon)
         # analysisMonthdf <- aggregate(x = analysisArraydf, by = list(), FUN = "sum")        
+        aggregate(CustomerNo, FUN = "sum", salesFrame)        
+        aggregate(as.numeric(data.matrix(Value)) ~ Customer, FUN = "sum", data=salesFrame)        
+        aggregate(as.numeric(data.matrix(Value)) ~ Customer, FUN = "length", data=salesFrame)        
         
 #-Growth of the database-------------------------------------------------------------------------------
         
@@ -147,9 +156,12 @@ return(X)}
 #                                                 Green - returning
         ggplot(data = analysisMonthdf, 
                mapping = aes(x = Date)) +
-                geom_line(aes(y = NumberofCustomers, color = "Total"),  size = 2)+
+                geom_line(aes(y = NumberofCustomers, color = "Total"),  size = 1)+
                 geom_line(aes(y = NumberNewCustomers, color = "New"), size = 1)+
                 geom_line(aes(y = NumberReturningCustomers, color = "Returning"),  size = 1)+
+                geom_point(aes(y = NumberReturningCustomers, color = "Returning"),  size = 3)+
+                geom_point(aes(y = NumberNewCustomers, color = "New"),  size = 3)+
+                geom_point(aes(y = NumberofCustomers, color = "Total"),  size = 3)+
                 labs(title = paste("Customer Visits per Month","\n All Services"), x="Month", y="Monthly Customer Count")+
                 scale_colour_manual("Break down", 
                                     breaks = c("Total", "New", "Returning"),
@@ -169,6 +181,7 @@ return(X)}
                         #axis.text = element_text(colour="yellow")
                 ) +
                 guides(size=guide_legend(override.aes = list(fill="black", alpha=1)))
+                makeHeadnote(paste("Shop statistics for",MonthString), color = "black")
         
         
         
