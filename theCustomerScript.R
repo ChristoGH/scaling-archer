@@ -29,13 +29,36 @@ chShop <- odbcConnect("shopData")
         salesFrame$yMon <- as.yearmon(as.Date(salesFrame$SalesDate), "%YM%m")
         
 odbcClose(chShop)
-
-#  The start and end dates for SEPTEMBER 2014:
+#-----------------------------------------------------------------------------------------------------        
+# Here we create 3 frames, one for each of the SERVICES offered b y the shop:
+        
+        drycleaningFrame <- salesFrame[salesFrame$ServiceDescription=="Dry-cleaning",]        
+        cobblingFrame <- salesFrame[salesFrame$ServiceDescription=="Cobbling",]           
+        alterationsFrame <- salesFrame[salesFrame$ServiceDescription=="Alterations",]   
+#-----------------------------------------------------------------------------------------------------        
+#The following code analyses the customer overlap, that is how many customers used
+#         Drycleaning and alterations (alterationsDrycleaningOVL), 
+#         Drycleaning and Cobbling (cobblingDrycleaningOVL), 
+#         Cobbling and Alterations (alterationsCobblingOVL) and
+#         Cobbling, Alterations and Drycleaning (totalOVL):
+        
+                cobblingDrycleaningOVL<-intersect(drycleaningFrame$CustomerNo,cobblingFrame$CustomerNo)
+                alterationsDrycleaningOVL<-intersect(drycleaningFrame$CustomerNo,alterationsFrame$CustomerNo)
+                alterationsCobblingOVL<-intersect(cobblingFrame$CustomerNo,alterationsFrame$CustomerNo)
+                totalOVL<-intersect(drycleaningFrame$CustomerNo,alterationsCobblingOVL)
+                length(cobblingDrycleaningOVL)
+                length(alterationsDrycleaningOVL)
+                length(alterationsCobblingOVL)
+                length(totalOVL)
+        
+        
+        #  The start and end dates for SEPTEMBER 2014:
         DateZero <- as.numeric(as.POSIXct("01/01/2013 00:00", tz = "", "%d/%m/%Y %H:%M")) 
         DateFrom <- as.numeric(as.POSIXct("01/02/2015 00:00", tz = "", "%d/%m/%Y %H:%M"))        #The unique ServiceItem values are found so:
         DateTo <- as.numeric(as.POSIXct("01/03/2015 00:00", tz = "", "%d/%m/%Y %H:%M"))  
+        
         datestr<-as.POSIXct("01/02/2015 00:00", tz = "", "%d/%m/%Y %H:%M")
-        MonthString <- format(datestr, "%B %Y")
+        MonthString <- format(max(salesFrame$SalesDate), "%B %Y")
 
 
 #This is the index for values between the From and To dates, the Current period:
@@ -47,11 +70,42 @@ odbcClose(chShop)
 
 #This is the index for values between the Zero and To dates, the Total period:        
         IndexZeroTo <- (as.Date(salesFrame$SalesDate)<as.Date(DateTo))&(as.Date(salesFrame$SalesDate)>=as.Date(DateZero))
+
+#-----------------------------------------------------------------------------------------------------        
+#In this section of code we only look at what happened this month.  
+#        And what we are looking for is Customers who use 
+#        more than one of our services or perhaps even all of our services
         
+        cobblingDrycleaningOVL<-intersect(drycleaningFrame[((drycleaningFrame$SalesDate)<(DateTo))&((drycleaningFrame$SalesDate)>=(DateFrom)),]$CustomerNo,cobblingFrame[((cobblingFrame$SalesDate)<(DateTo))&((cobblingFrame$SalesDate)>=(DateFrom)),]$CustomerNo)
+        alterationsDrycleaningOVL<-intersect(drycleaningFrame[((drycleaningFrame$SalesDate)<(DateTo))&((drycleaningFrame$SalesDate)>=(DateFrom)),]$CustomerNo,alterationsFrame[((alterationsFrame$SalesDate)<(DateTo))&((alterationsFrame$SalesDate)>=(DateFrom)),]$CustomerNo)
+        alterationsCobblingOVL<-intersect(cobblingFrame[((cobblingFrame$SalesDate)<(DateTo))&((cobblingFrame$SalesDate)>=(DateFrom)),]$CustomerNo,alterationsFrame[((alterationsFrame$SalesDate)<(DateTo))&((alterationsFrame$SalesDate)>=(DateFrom)),]$CustomerNo)
+        totalOVL<-intersect(drycleaningFrame[((drycleaningFrame$SalesDate)<(DateTo))&((drycleaningFrame$SalesDate)>=(DateFrom)),]$CustomerNo,alterationsCobblingOVL)
+        length(cobblingDrycleaningOVL)
+        length(alterationsDrycleaningOVL)
+        length(alterationsCobblingOVL)
+        length(totalOVL)
+        
+        
+#-----------------------------------------------------------------------------------------------------        
         # Here is where we have to calculate 
         # 1.    the number of days since the last visit
         # 2.    the number of times previously visit
         # 3.    the average days between visits
+        
+# The following line of code is used to show all instances where a customer from the current month
+# has visited the shop before and on which lines of the DB        
+# This line of code yields the date when a particular customer last visited.        
+        lastVisit <- max(salesFrame$SalesDate[is.element(salesFrame[!IndexToFrom,]$CustomerNo,salesFrame[IndexToFrom,]$CustomerNo[3])])
+        firstVisit <- min(salesFrame$SalesDate[is.element(salesFrame[!IndexToFrom,]$CustomerNo,salesFrame[IndexToFrom,]$CustomerNo[3])])
+        daysSince <- salesFrame[IndexToFrom,]$SalesDate[3] - lastVisit
+        
+        salesFrame$SalesDate[is.element(salesFrame[!IndexToFrom,]$CustomerNo,salesFrame[IndexToFrom,]$CustomerNo[3])]
+#The following is a sorted DATE list of ALL the dates a particular customer has come to the shop:        
+        dateList<-sort(unique(as.Date(salesFrame$SalesDate[is.element(salesFrame$CustomerNo,salesFrame[IndexToFrom,]$CustomerNo[3])])))        
+#so that the following line yeilds the avarage days between visits:
+        meanDays <- mean(dateList[2:length(dateList)]- dateList[1:length(dateList)-1])
+# How many UNIQUE visits did this custy make to the shop, since inception? :
+        numberVisits <- length(dateList)
         
                 #       Let say Day = 26 January 2015 or
                                 Day <- as.Date("2015-01-01")
@@ -123,7 +177,7 @@ odbcClose(chShop)
         aggregate(CustomerNo, FUN = "sum", salesFrame)        
         aggregate(as.numeric(data.matrix(Value)) ~ Customer, FUN = "sum", data=salesFrame)        
         aggregate(as.numeric(data.matrix(Value)) ~ Customer, FUN = "length", data=salesFrame)        
-        
+        aggregate(x=salesFrame, by=list(Customer), FUN = "length", )  
 #-Growth of the database-------------------------------------------------------------------------------
         
         png(file=paste("growthOfTheLevVPdatabase_", MonthString,".png",sep=""))                
@@ -186,7 +240,8 @@ odbcClose(chShop)
         
         
 #----------------------------------------------------------------------------------------------------
-# The following code represents a month and allows numbers to be plotted on each day of the month:
+# The following code represents a month and allows shop turnover numbers 
+#        to be plotted on each day of the month:
         
         
         start <- as.Date("2015-02-01")
@@ -224,7 +279,7 @@ odbcClose(chShop)
         
         ggplot(mergeFrame, aes(x=weekday, y=weeknum, fill = NumberofCustomers)) + 
                 geom_tile() +
-                geom_text(aes(label=day)) + scale_fill_gradient(low="green", high="red") +
+                geom_text(aes(label=day)) + scale_fill_gradient(low="yellow", high="red") +
                 labs(title = "Total Number of Customers", x="Week Day", y="Week Number")
         # scale_colour_gradient(limits=c(1, 10))           
 
@@ -232,27 +287,3 @@ odbcClose(chShop)
                 geom_tile() +
                 geom_text(aes(label=day)) + scale_fill_gradient(low="yellow", high="red") # scale_colour_gradient(limits=c(1, 10))           
         
-        
-        BubblePlot <- ggplot(splitFrame, aes(x=tImprov, y=finalsSeconds,size=AgeGroup,label=Name))+
-                geom_point(aes(colour=Province,title = "Province"), alpha=0.5) +  labs(title = paste(LongEventString, FinalsStr), x="Time improvement in Seconds", y="Time in Seconds") +#scale_size_area(min_size = 1,max_size = 10)+
-                geom_text(size=2, aes(label=Name),hjust=-0.15, vjust=0) +
-                scale_size(range = c(1, 15), name = "Relative Age")+  
-                guides(col = guide_legend(override.aes = list(shape = 15, size = 10))) +
-                theme(
-                        axis.title.y = element_text(size = rel(1.25), colour = "Black"),
-                        axis.title.x = element_text(size = rel(1.25), colour = "Black"),
-                        plot.title = element_text(size = rel(1.5), colour = "Black", vjust=0.35),
-                        axis.text = element_text(size = rel(1), colour = "Black"),
-                        #panel.background = element_rect(fill = "white",colour = NA), # or theme_blank()
-                        #panel.grid.minor = element_blank(), 
-                        #panel.grid.major = element_blank(),
-                        #legend.title = element_text("This is it!"),
-                        #                plot.background = element_rect(fill = "white",colour = NA)
-                        plot.background = element_rect(fill = "transparent",colour = NA)
-                        #axis.text = element_text(colour="yellow")
-                ) +
-                guides(size=guide_legend(override.aes = list(fill="black", alpha=1)))#+
-        print(BubblePlot)
-        makeHeadnote(HeadNoteALL, color = "black")
-        }
-        }         

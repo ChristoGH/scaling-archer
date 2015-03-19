@@ -34,7 +34,7 @@ odbcClose(chShop)
         #MonthString is a string reflecting the MONTH under investigation
 
         #        datestr<-as.POSIXct("01/01/2015 00:00", tz = "", "%d/%m/%Y %H:%M")
-                MonthString <- format(as.POSIXct("01/02/2015 00:00", tz = "", "%d/%m/%Y %H:%M"), "%B %Y")
+                MonthString <- format(as.POSIXct(max(salesFrame$SalesDate), tz = "", "%d/%m/%Y %H:%M"), "%B %Y")
 
 
 #The following extracts the make up of Cobbling broken down by Service Item:       
